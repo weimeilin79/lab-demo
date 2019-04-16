@@ -25,26 +25,22 @@ public class VehicleGenerator extends RouteBuilder {
                 .setBody(this::randomVehicle)
                 .process(e -> activeVehicles.add(e.getMessage().getBody(VehicleInfo.class)))
                 .loadBalance().roundRobin()
-                    .to("direct:sendUber")
-                    .to("direct:sendLyft")
+                    .to("direct:sendUBER")
+                    .to("direct:sendLYFT")
                 .end();
 
         from("direct:remove")
                 .setBody(() -> activeVehicles.poll())
                 .process(e -> e.getMessage().getBody(VehicleInfo.class).setAvailable(false))
-                .choice()
-                    .when(simple("${body.getProvider()} == 'UBER'"))
-                        .to("direct:sendUber")
-                    .otherwise()
-                        .to("direct:sendLyft");
+                .recipientList(simple("direct:send${body.getProvider()}"));
 
 
-        from("direct:sendUber")
+        from("direct:sendUBER")
                 .process(e -> e.getMessage().getBody(VehicleInfo.class).setProvider("UBER"))
                 .marshal().json(JsonLibrary.Jackson)
                 .to("seda:uber");
 
-        from("direct:sendLyft")
+        from("direct:sendLYFT")
                 .process(e -> e.getMessage().getBody(VehicleInfo.class).setProvider("LYFT"))
                 .setBody(simple("${body.getVehicleId()},${body.getPricePerMinute()},${body.getTimeToPickup()},${body.getAvailableSpace()},${body.isAvailable()}"))
                 .to("seda:lyft");
