@@ -14,7 +14,7 @@ public class TrafficGenerator extends RouteBuilder {
         from("timer:tick?period=6s")
                 .setBody(method(this, "generateTraffic"))
                 .marshal().json(JsonLibrary.Jackson)
-                .to("seda:traffic");
+                .to("kafka:traffic?brokers=my-cluster-kafka-bootstrap.streams.svc:9092");
 
     }
 

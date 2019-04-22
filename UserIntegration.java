@@ -9,19 +9,19 @@ public class UserIntegration extends RouteBuilder {
 
     public void configure() throws Exception {
 
-        from("seda:traffic")
+        from("kafka:traffic?brokers=my-cluster-kafka-bootstrap.streams.svc:9092")
                 .unmarshal().json(JsonLibrary.Jackson, TrafficInfo.class)
                 .filter(simple("${body.getDestination()} == 'AIRPORT'"))
                 .process(e -> traffic.set(e.getMessage().getBody(TrafficInfo.class).getExpectedTime()))
                 .log("Updated traffic: ${body}");
 
 
-        from("seda:lyft")
+        from("kafka:lyft?brokers=my-cluster-kafka-bootstrap.streams.svc:9092")
                 .unmarshal().csv().split().body()
                 .setBody(method(this, "buildLyft(${body[0]}, ${body[1]}, ${body[2]}, ${body[3]}, ${body[4]})"))
                 .to("direct:process");
 
-        from("seda:uber")
+        from("kafka:uber?brokers=my-cluster-kafka-bootstrap.streams.svc:9092")
                 .unmarshal().json(JsonLibrary.Jackson, VehicleInfo.class)
                 .process(e -> e.getMessage().getBody(VehicleInfo.class).setProvider("UBER"))
                 .to("direct:process");
@@ -33,10 +33,10 @@ public class UserIntegration extends RouteBuilder {
                     v.setPrice(v.getPricePerMinute() * traffic.get());
                 })
                 .marshal().json(JsonLibrary.Jackson)
-                .to("seda:stream");
+                .to("kafka:stream?brokers=my-cluster-kafka-bootstrap.streams.svc:9092");
 
         // TODO remove when setting Kafka
-        from("seda:stream")
+        from("kafka:stream?brokers=my-cluster-kafka-bootstrap.streams.svc:9092")
                 .log("Processed: ${body}");
     }
 

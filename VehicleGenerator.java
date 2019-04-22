@@ -38,12 +38,12 @@ public class VehicleGenerator extends RouteBuilder {
         from("direct:sendUBER")
                 .process(e -> e.getMessage().getBody(VehicleInfo.class).setProvider("UBER"))
                 .marshal().json(JsonLibrary.Jackson)
-                .to("seda:uber");
+                .to("kafka:uber?brokers=my-cluster-kafka-bootstrap.streams.svc:9092");
 
         from("direct:sendLYFT")
                 .process(e -> e.getMessage().getBody(VehicleInfo.class).setProvider("LYFT"))
                 .setBody(simple("${body.getVehicleId()},${body.getPricePerMinute()},${body.getTimeToPickup()},${body.getAvailableSpace()},${body.isAvailable()}"))
-                .to("seda:lyft");
+                .to("kafka:lyft?brokers=my-cluster-kafka-bootstrap.streams.svc:9092");
 
     }
 
